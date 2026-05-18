@@ -31,7 +31,7 @@ To **re-seed** with a fresh image set: `cd server && node seed.js --reset` (this
 
 ## Architecture
 
-Two-package monorepo. **Backend** is a Node + Express server on `:3001` with a SQLite database (`better-sqlite3`). It exposes five endpoints: `GET /api/items`, `POST /api/vote`, `DELETE /api/vote` (undo), `GET /api/results`, `GET /api/votes/:sessionId`. **Frontend** is a React + Vite app on `:5173` (proxying `/api` to the backend) with **Framer Motion** for the swipe physics and **Fraunces + Manrope + Newsreader** for an editorial typographic voice.
+Two-package monorepo. **Backend** is a Node + Express server on `:3001` with a SQLite database (`better-sqlite3`) exposing a small REST surface — items list, vote upsert, vote undo, aggregate results, per-session votes, live stats, and a key-gated admin endpoint for adding items (full table under [API contract](#api-contract) below). **Frontend** is a React + Vite app on `:5173` (proxying `/api` to the backend) with **Framer Motion** for the swipe physics and **Fraunces + Manrope + Newsreader** for an editorial typographic voice.
 
 The user's identity is an anonymous **UUID v4** stored in `localStorage`, sent with every vote. **Idempotency** is enforced at the DB layer: `UNIQUE(session_id, item_id)` plus `INSERT … ON CONFLICT DO UPDATE` — re-voting the same item replaces, never duplicates. The deck filter on the client (`allItems.filter(it => !voted.has(it.id))`) skips already-voted items, so reloading mid-deck resumes where you left off.
 
@@ -109,6 +109,7 @@ We resisted the default "AI-purple-gradient on white" trap. The visual direction
 - **No Tailwind, no UI kit.** A single hand-tuned `styles.css` lets us commit to the bespoke editorial aesthetic without fighting framework defaults — and avoids the 50KB+ Tailwind preflight on a 100-item app.
 - **Optimistic UI.** Votes are reflected locally the moment the card animates out; the POST happens in the background. A failed POST rolls back the local state and logs to the console.
 - **In-component CSS variables.** All design tokens live in `:root` of `styles.css` — no theme provider, no styled-components, no class-name engine. Mobile-first means we have one breakpoint to worry about and no reason to abstract.
+- **Card aspect-ratio with a hard cap.** The swipe card uses `aspect-ratio: 3/4.2` so it looks the same proportions on every mobile screen, but `.deck__stage` also has `max-height: calc(100svh - 310px)` so on shorter or wider viewports the height stops growing before it can push the action row down into the fixed tab bar. Using `svh` (small viewport height) means the cap holds even as the iOS Safari URL bar appears and disappears.
 
 ---
 
