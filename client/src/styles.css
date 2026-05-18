@@ -80,7 +80,7 @@ a { color: inherit; }
   min-height: 100vh;
   max-width: 480px;
   margin: 0 auto;
-  padding-bottom: 96px;       /* room for tab bar */
+  padding-bottom: 112px;      /* room for the fixed tab bar + action row clearance */
   display: flex;
   flex-direction: column;
 }
@@ -164,6 +164,7 @@ a { color: inherit; }
   flex-direction: column;
   align-items: center;
   padding: 8px 18px 0;
+  min-height: 0;              /* lets the stage actually shrink in a flex column */
 }
 
 .deck__stage {
@@ -171,7 +172,10 @@ a { color: inherit; }
   width: 100%;
   max-width: 360px;
   aspect-ratio: 3 / 4.2;
-  margin: 8px auto 18px;
+  /* Hard cap so the card can never push the action row past the fixed tab bar.
+     Reserves: header (~70) + progress (~38) + actions (~96) + tabbar+pad (~106). */
+  max-height: calc(100svh - 310px);
+  margin: 8px auto 14px;
 }
 
 .card {
