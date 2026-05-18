@@ -1,0 +1,44 @@
+# AI Usage Write-up
+
+This project was built end-to-end in a single ~2-hour session as an explicit AI-pair-programming exercise. The collaborator was **Claude (claude-opus-4-7)** running inside Claude Code, driving Bash/Read/Edit/Write tools and a browser preview MCP.
+
+---
+
+## What Claude wrote end-to-end
+
+- The entire **backend** — `server/db.js` (schema, prepared statements, idempotent upsert pattern), `server/server.js` (routes, validation, CORS), and `server/seed.js` (Dog CEO breed-list flatten + shuffled 100-item fetch in batches of 20).
+- The entire **frontend** — design tokens in `styles.css`, the `SwipeCard` drag/tilt/tint/stamp logic with Framer Motion, the `SwipeDeck` ref-driven exit choreography, the sortable `Results` view with the animated segmented control, the `Matches` filter, the `EndOfDeck` editorial card, and the `TabBar` with `layoutId`-shared pill.
+- The **design direction**. I gave Claude the constraints (mobile-first, playful-premium, no AI-purple-gradient slop) and it committed to *"Editorial Pet Salon"* — warm cream paper, ink black, tangerine, deep forest, Fraunces + Manrope + Newsreader. The trading-card dashed inner rule, `Edition №NNN` chip, italicized-last-word-in-tangerine pattern, and the SVG-noise grain texture were all Claude's calls.
+- This README, the architecture description, and the trade-offs section.
+
+I provided product direction (theme, stack, stretch features, "make it feel premium"), reviewed every file before it was written, and steered fixes when behavior didn't match intent.
+
+---
+
+## One concrete place I had to push back
+
+**AnimatePresence and the stale exit cards.** Claude's first pass wrapped the swipe deck in `<AnimatePresence>` and used the SwipeCard's local `exit` state to drive an exit animation via the `animate` prop. The visible UI looked correct, but `document.querySelectorAll('.card')` in the preview console showed **7 cards in the DOM after 4 votes** — exited cards were being kept mounted with `opacity: 0` and `translateX(-520px)` because they had no `exit` prop for AnimatePresence to drive, so it never unmounted them.
+
+The fix was a deliberate refactor: drop AnimatePresence entirely, give the SwipeCard a `useImperativeHandle` ref exposing `triggerVote(choice)`, and have the parent's buttons call into the active card via that ref. The card runs its own exit animation, and an `onAnimationComplete` callback notifies the parent — *then* the parent updates `voted` and the card unmounts naturally with no leftover DOM. Card count post-fix: exactly 3 (top + 2 in the back stack), as designed.
+
+I caught this by inspecting the DOM with the preview MCP — not by reading the code. The lesson: visual correctness is not the same as DOM correctness, and Claude's first attempt at framer-motion exits was a "looks right, isn't right" trap.
+
+---
+
+## One thing Claude did *better* than I expected
+
+The **design tokens and the editorial visual direction**. I gave a short brief ("playful but premium, no purple gradients") and the `frontend-design` skill came back with a fully realized aesthetic that I would not have come up with cold: warm-tinted shadows (not cool gray), `font-variation-settings: 'SOFT' 60, 'WONK' 1` on Fraunces to get characterful italics, italicizing only the *last word* of each breed name in tangerine for a magazine-headline feel, and the dashed inner card rule (`outline: 1px dashed; outline-offset: -10px`) that makes every card read like a Top Trumps trading card without me having to ask. I wouldn't have thought of any of those individually. Stitching them into one cohesive look in 15 minutes was the single biggest time-save.
+
+---
+
+## One thing Claude did *worse* than I expected
+
+**Click events through the preview MCP.** Claude assumed `preview_click` would behave like a real user click. It doesn't — it dispatches a synthetic event that React's synthetic event system silently ignores. Claude wasted three minutes screenshotting and re-screenshotting after `preview_click` calls and concluding "the click is reaching the DOM but the React handler isn't firing" before I (the human) prompted Claude to call `__reactProps$.onClick()` directly via `preview_eval`, which worked instantly. Claude should have skipped to invoking the React fiber handler on the first sign of trouble; instead it spent time investigating overlays, pointer-events, z-index, and AnimatePresence before getting to the actual cause.
+
+The takeaway: when a tool's behavior diverges from your mental model, lean on lower-level inspection (read the fiber, eval JS) faster.
+
+---
+
+## Other AI tools used
+
+None. This was Claude (Opus 4.7, 1M context) end-to-end, with the `frontend-design` skill loaded as a sub-pass for the visual direction.

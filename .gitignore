@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Local DB & WAL files — re-create via `node seed.js --reset`
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
