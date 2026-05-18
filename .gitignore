@@ -7,3 +7,6 @@ dist/
 server/data/*.db
 server/data/*.db-wal
 server/data/*.db-shm
+
+# Claude Code transient worktrees (operational, never committed)
+.claude/worktrees/
