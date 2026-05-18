@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { api } from '../api.js';
 
 const SORTS = [
@@ -8,18 +8,32 @@ const SORTS = [
   { key: 'skipped',  label: 'Most Skipped' },
 ];
 
-const POLL_MS = 5000; // stretch: poll for live updates
+const POLL_MS = 5000;
+
+const HERO_LABEL = {
+  loved:    'BEST IN SHOW',
+  divisive: 'THE GREAT DEBATE',
+  skipped:  'LEAST SEEN',
+};
+const HERO_TAG = {
+  loved:    'BEST',
+  divisive: 'DIVIDED',
+  skipped:  'SKIPPED',
+};
+const REST_LABEL = {
+  loved:    'THE REST OF THE PACK',
+  divisive: 'OTHER DIVIDERS',
+  skipped:  'ALSO QUIET',
+};
 
 export default function Results() {
   const [rows, setRows] = useState(null);
   const [sort, setSort] = useState('loved');
   const [error, setError] = useState(null);
 
-  // Initial + polling fetch
   useEffect(() => {
     let cancel = false;
     let timer;
-
     const load = async () => {
       try {
         const data = await api.results();
@@ -38,7 +52,6 @@ export default function Results() {
     if (!rows) return null;
     const arr = rows.slice();
     if (sort === 'loved') {
-      // Most loved: yes_rate desc, ties → more votes first; require total > 0
       arr.sort((a, b) => {
         if (a.total === 0 && b.total === 0) return 0;
         if (a.total === 0) return 1;
@@ -46,14 +59,12 @@ export default function Results() {
         return b.yes_rate - a.yes_rate || b.total - a.total;
       });
     } else if (sort === 'divisive') {
-      // Closest to 50/50 among items with at least 2 votes
       arr.sort((a, b) => {
         const aScore = a.total < 2 ? Infinity : Math.abs(0.5 - a.yes_rate);
         const bScore = b.total < 2 ? Infinity : Math.abs(0.5 - b.yes_rate);
         return aScore - bScore || b.total - a.total;
       });
     } else {
-      // Most skipped: lowest total first; alphabetical on tie
       arr.sort((a, b) => a.total - b.total || a.label.localeCompare(b.label));
     }
     return arr;
@@ -63,52 +74,124 @@ export default function Results() {
   if (!sorted) return <div className="loading">Tallying votes…</div>;
 
   const totalVotes = sorted.reduce((s, r) => s + r.total, 0);
+  const hero = sorted[0];
+  const rest = sorted.slice(1);
 
   return (
-    <section className="section">
-      <header className="section__head">
-        <h1 className="section__title">The <em>Results</em></h1>
-        <span className="section__meta">{totalVotes} votes · live</span>
-      </header>
+    <section className="section results">
+      <div className="results__masthead">
+        <div className="results__kicker">Volume 01 · Live Tally</div>
+        <h1 className="results__title">The <em>Verdict</em></h1>
+        <div className="results__byline">{totalVotes} votes counted · refreshing every 5s</div>
+      </div>
 
       <Segmented value={sort} onChange={setSort} options={SORTS} />
 
-      <div className="r-list">
-        {sorted.map((row, i) => (
-          <ResultRow key={row.itemId} row={row} rank={i + 1} />
-        ))}
-      </div>
+      <LayoutGroup>
+        <AnimatePresence mode="wait" initial={false}>
+          {hero && (
+            <motion.div
+              key={`${sort}-${hero.itemId}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <HeroCard row={hero} kicker={HERO_LABEL[sort]} sort={sort} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="r-divider">
+          <span className="r-divider__label">{REST_LABEL[sort]}</span>
+        </div>
+
+        <div className="r-spread">
+          {rest.map((row, i) => (
+            <motion.div
+              layout
+              key={row.itemId}
+              className="r-tile"
+              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+            >
+              <span className="r-tile__rank" aria-hidden="true">
+                {String(i + 2).padStart(2, '0')}
+              </span>
+              <img
+                className="r-tile__img"
+                src={row.image_url}
+                alt=""
+                loading="lazy"
+              />
+              <h3 className="r-tile__name">{row.label}</h3>
+              <div className="r-tile__meta">
+                <span>
+                  {row.total === 0
+                    ? 'NO VOTES'
+                    : `${row.yes}Y · ${row.no}N`}
+                </span>
+                <span className="r-tile__pct">
+                  {row.total === 0 ? '—' : `${Math.round(row.yes_rate * 100)}%`}
+                </span>
+              </div>
+              <div className="r-tile__bar" aria-hidden="true">
+                <motion.div
+                  className="r-tile__bar-fill"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(row.yes_rate || 0) * 100}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </LayoutGroup>
     </section>
   );
 }
 
-function ResultRow({ row, rank }) {
+function HeroCard({ row, kicker, sort }) {
   const pct = row.total === 0 ? null : Math.round(row.yes_rate * 100);
+  const lastWord = row.label.split(' ').slice(-1)[0];
+  const firstWords = row.label.split(' ').slice(0, -1).join(' ');
+
+  const caption = (() => {
+    if (row.total === 0) return 'Awaiting first verdict from the floor.';
+    if (sort === 'loved') {
+      return `${row.yes} of ${row.total} voter${row.total === 1 ? '' : 's'} fell in love. ${pct}% yes.`;
+    }
+    if (sort === 'divisive') {
+      const lean = row.yes_rate >= 0.5 ? 'lean yes' : 'lean no';
+      return `Split the floor. ${row.yes} yes, ${row.no} no — ${pct}% ${lean}.`;
+    }
+    return `Only ${row.total} vote${row.total === 1 ? '' : 's'} so far. The crowd hasn't decided.`;
+  })();
+
   return (
-    <article className="r-row">
-      <img className="r-row__img" src={row.image_url} alt="" loading="lazy" />
-      <div className="r-row__info">
-        <div className="r-row__name">
-          <span className="r-rank">№{String(rank).padStart(2, '0')}</span>
-          {row.label}
-        </div>
-        <div className="r-row__sub">
-          {row.total === 0
-            ? 'AWAITING VOTES'
-            : `${row.yes} YES · ${row.no} NO · ${row.total} TOTAL`}
+    <article className="r-hero">
+      <div className="r-hero__kicker">{kicker}</div>
+
+      <div className="r-hero__image-wrap">
+        <img className="r-hero__image" src={row.image_url} alt={row.label} />
+        <div className="r-hero__rank-overlay">
+          <span className="r-hero__rank">01</span>
+          <span className="r-hero__rank-rule" />
+          <span className="r-hero__rank-tag">{HERO_TAG[sort]}</span>
         </div>
       </div>
-      <div className={`r-row__pct ${pct === null || pct < 50 ? 'r-row__pct--lo' : ''}`}>
-        {pct === null ? '—' : `${pct}%`}
+
+      <div className="r-hero__body">
+        <h2 className="r-hero__name">
+          {firstWords ? `${firstWords} ` : ''}<em>{lastWord}</em>
+        </h2>
+        <div className="r-hero__pct">
+          {pct === null ? <span className="r-hero__pct-dash">—</span> : (
+            <>{pct}<sup>%</sup></>
+          )}
+        </div>
       </div>
-      <div className="r-bar">
-        <motion.div
-          className="r-bar__fill"
-          initial={{ width: 0 }}
-          animate={{ width: `${(row.yes_rate || 0) * 100}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
+
+      <p className="r-hero__caption">{caption}</p>
     </article>
   );
 }

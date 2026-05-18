@@ -487,84 +487,315 @@ a { color: inherit; }
   box-shadow: 0 4px 10px -4px rgba(26,20,16,0.4);
 }
 
-/* Results list -------------------------------------------- */
-.r-list {
+/* =====================================================
+   Results — Magazine Spread
+   Kicker rule → hero cover → tracked-mono divider → 2-col contact sheet
+   ===================================================== */
+
+.results__masthead {
+  margin-bottom: 18px;
+}
+.results__kicker {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tangerine);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.results__kicker::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--tangerine);
+  display: inline-block;
+}
+.results__title {
+  font-family: var(--f-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 80, 'WONK' 1;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin: 0;
+}
+.results__title em {
+  font-style: italic;
+  font-family: var(--f-italic);
+  color: var(--tangerine);
+}
+.results__byline {
+  margin-top: 10px;
+  font-family: var(--f-italic);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-mute);
+  letter-spacing: 0.005em;
+}
+
+/* ----- Hero "Best in Show" cover ----- */
+.r-hero {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 16px 16px 18px;
+  box-shadow: var(--sh-card);
+  border: 1px solid var(--rule);
+  margin-top: 18px;
+  margin-bottom: 28px;
+  outline: 1px solid var(--rule);
+  outline-offset: -8px;
+}
+
+.r-hero__kicker {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 4px 12px;
+}
+.r-hero__kicker::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
+.r-hero__image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--bg-deep);
+  box-shadow: var(--sh-soft);
+}
+.r-hero__image {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: saturate(1.08) contrast(1.02);
+}
+
+.r-hero__rank-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(26,20,16,0) 35%, rgba(26,20,16,0.45) 100%);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: flex-end;
+  padding: 18px;
 }
-.r-row {
+.r-hero__rank {
+  font-family: var(--f-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 96px;
+  line-height: 0.85;
+  color: var(--surface-2);
+  letter-spacing: -0.05em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.18);
+}
+.r-hero__rank-rule {
+  display: block;
+  width: 32px;
+  height: 2px;
+  background: var(--tangerine);
+  margin: 10px 0 6px;
+}
+.r-hero__rank-tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--surface-2);
+  text-transform: uppercase;
+}
+
+.r-hero__body {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
-  grid-template-areas:
-    "img info pct"
-    "img bar  bar";
-  gap: 4px 14px;
-  align-items: center;
-  background: var(--surface);
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  box-shadow: var(--sh-soft);
-  border: 1px solid var(--rule);
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+  margin-top: 18px;
+  padding: 0 4px;
 }
-.r-row__img {
-  grid-area: img;
-  width: 56px; height: 56px;
-  border-radius: 12px;
+.r-hero__name {
+  font-family: var(--f-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 60, 'WONK' 1;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+.r-hero__name em {
+  display: block;
+  font-style: italic;
+  font-family: var(--f-italic);
+  color: var(--tangerine);
+  margin-top: 2px;
+}
+.r-hero__pct {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 144, 'SOFT' 80, 'WONK' 1;
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 0.85;
+  color: var(--ink);
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.r-hero__pct sup {
+  font-size: 18px;
+  vertical-align: 26px;
+  color: var(--tangerine);
+  font-weight: 500;
+  margin-left: 2px;
+}
+.r-hero__pct-dash {
+  color: var(--ink-mute);
+}
+
+.r-hero__caption {
+  font-family: var(--f-italic);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 16px 4px 0;
+  padding-top: 14px;
+  border-top: 1px dashed var(--rule-strong);
+}
+
+/* ----- Section divider ----- */
+.r-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 14px;
+}
+.r-divider::before,
+.r-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule-strong);
+}
+.r-divider__label {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+/* ----- Contact-sheet grid ----- */
+.r-spread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.r-tile {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--rule);
+  padding: 14px 14px 12px;
+  overflow: hidden;
+  box-shadow: var(--sh-soft);
+  min-height: 198px;
+  display: flex;
+  flex-direction: column;
+}
+.r-tile__rank {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  font-family: var(--f-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 76px;
+  line-height: 0.86;
+  color: rgba(26, 20, 16, 0.1);
+  letter-spacing: -0.05em;
+  pointer-events: none;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  z-index: 0;
+}
+.r-tile__img {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
   object-fit: cover;
   background: var(--bg-deep);
+  box-shadow: var(--sh-soft);
+  margin-bottom: 12px;
+  z-index: 1;
 }
-.r-row__info {
-  grid-area: info;
-  display: flex;
-  flex-direction: column;
-}
-.r-row__name {
+.r-tile__name {
+  position: relative;
   font-family: var(--f-display);
+  font-variation-settings: 'opsz' 60, 'SOFT' 40, 'WONK' 1;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.18;
   letter-spacing: -0.01em;
-  font-variation-settings: 'opsz' 60, 'SOFT' 40;
-  line-height: 1.1;
+  color: var(--ink);
+  margin: 0;
+  z-index: 1;
 }
-.r-row__sub {
+.r-tile__meta {
+  position: relative;
+  margin-top: auto;
+  padding-top: 10px;
   font-family: var(--f-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  font-size: 9.5px;
   color: var(--ink-mute);
-  margin-top: 4px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  z-index: 1;
 }
-.r-row__pct {
-  grid-area: pct;
+.r-tile__pct {
   font-family: var(--f-display);
+  font-variation-settings: 'opsz' 60, 'WONK' 1;
+  font-style: normal;
   font-weight: 500;
-  font-variation-settings: 'opsz' 144, 'WONK' 1;
-  font-size: 22px;
+  font-size: 17px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
-.r-row__pct--lo { color: var(--ink-mute); }
-.r-bar {
-  grid-area: bar;
-  height: 6px;
+.r-tile__bar {
+  position: relative;
+  height: 3px;
   border-radius: var(--r-pill);
   background: var(--rule);
+  margin-top: 8px;
   overflow: hidden;
-  position: relative;
-  margin-top: 6px;
+  z-index: 1;
 }
-.r-bar__fill {
+.r-tile__bar-fill {
   height: 100%;
   background: var(--tangerine);
   border-radius: inherit;
-}
-
-.r-rank {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--tangerine);
-  margin-right: 6px;
 }
 
 /* Matches grid -------------------------------------------- */
