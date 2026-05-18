@@ -13,9 +13,10 @@ async function req(path, opts = {}) {
 }
 
 export const api = {
-  items:   ()                                  => req('/items'),
-  results: ()                                  => req('/results'),
-  myVotes: (sessionId)                         => req(`/votes/${encodeURIComponent(sessionId)}`),
-  vote:    ({ itemId, choice, sessionId })     => req('/vote',  { method: 'POST',   body: JSON.stringify({ itemId, choice, sessionId }) }),
-  undo:    ({ itemId, sessionId })             => req('/vote',  { method: 'DELETE', body: JSON.stringify({ itemId, sessionId }) }),
+  items:   ()                                              => req('/items'),
+  results: ()                                              => req('/results'),
+  stats:   ()                                              => req('/stats'),
+  myVotes: (sessionId)                                     => req(`/votes/${encodeURIComponent(sessionId)}`),
+  vote:    ({ itemId, choice, sessionId, decisionMs })     => req('/vote',  { method: 'POST',   body: JSON.stringify({ itemId, choice, sessionId, decisionMs }) }),
+  undo:    ({ itemId, sessionId })                         => req('/vote',  { method: 'DELETE', body: JSON.stringify({ itemId, sessionId }) }),
 };

@@ -84,19 +84,21 @@ We resisted the default "AI-purple-gradient on white" trap. The visual direction
 | ✅ | Yes/No buttons | Tangerine adopt button + ink pass button + ghost undo |
 | ✅ | Visual feedback during gesture | Green/red tint, ADOPT/PASS rubber stamps, rotation |
 | ✅ | Smooth card transition | Spring-physics exit, ref-driven so buttons and drag share the same animation |
-| ✅ | Results view, reachable from nav + end-of-deck CTA | Tab bar + "Open Results" button on the end card |
+| ✅ | Results view, reachable from nav **and** by downward swipe | Bottom tab bar + EndOfDeck CTA + pull-down gesture on the active card (`dy > 110px`) |
 | ✅ | Aggregate yes/no counts | Live via 5s polling |
-| ✅ | At least one sort | **Three**: Most Loved, Most Divisive, Most Skipped (animated segmented control) |
+| ✅ | At least one sort | **Three**: Most Loved, Most Divisive, Most Skipped (animated segmented control, hero cover changes per sort) |
 | ✅ | Server-backed persistence (not localStorage as source of truth) | SQLite via `better-sqlite3` |
 | ✅ | End-of-deck state | Editorial "Issue Complete" card with `Open Results →` CTA |
 
-### Stretch (all four implemented)
+### Stretch (all six implemented)
 | | Stretch | Notes |
 |---|---|---|
 | ✅ | Anonymous session ID | UUID v4 via `crypto.randomUUID()` in localStorage |
 | ✅ | Undo last swipe | Keeps history of last 10 votes; `DELETE /api/vote` on the server |
 | ✅ | Matches view | Items where the user voted yes **and** global yes-rate ≥ 60% (with ≥ 2 votes) |
 | ✅ | Real-time updating | 5-second polling on the Results view |
+| ✅ | Admin / seed script to add items without code changes | `node seed.js --reset` + `POST /api/items` with `X-Admin-Key` header (default `swipe-admin`, override via `ADMIN_KEY` env) |
+| ✅ | Basic analytics | `GET /api/stats` returns `{ totalVotes, sessions, avgDecisionMs }`; surfaced in the Results masthead byline (e.g. *"66 votes · 2 voters · 8.0s avg decision · refreshing every 5s"*). Decision time is captured client-side from when a card becomes the active top card to when its vote fires. |
 
 ---
 
@@ -115,9 +117,11 @@ We resisted the default "AI-purple-gradient on white" trap. The visual direction
 | Method | Path | Body / Params | Returns |
 |---|---|---|---|
 | `GET`    | `/api/items`             | — | `[{ id, label, description, image_url }]` |
-| `POST`   | `/api/vote`              | `{ itemId, choice, sessionId }` | `{ ok: true }` (upsert) |
+| `POST`   | `/api/items`             | header `X-Admin-Key: swipe-admin`, body `{ label, description?, image_url }` | `201 { ok: true, id }` |
+| `POST`   | `/api/vote`              | `{ itemId, choice, sessionId, decisionMs? }` | `{ ok: true }` (upsert) |
 | `DELETE` | `/api/vote`              | `{ itemId, sessionId }` | `{ ok: true }` |
 | `GET`    | `/api/results`           | — | `[{ itemId, label, image_url, yes, no, total, yes_rate }]` |
+| `GET`    | `/api/stats`             | — | `{ totalVotes, sessions, avgDecisionMs }` |
 | `GET`    | `/api/votes/:sessionId`  | — | `[{ itemId, choice }]` |
 | `GET`    | `/api/health`            | — | `{ ok: true }` |
 

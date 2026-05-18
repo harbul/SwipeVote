@@ -24,6 +24,7 @@ db.exec(`
     session_id TEXT NOT NULL,
     item_id INTEGER NOT NULL,
     choice TEXT NOT NULL CHECK(choice IN ('yes','no')),
+    decision_ms INTEGER,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
     UNIQUE(session_id, item_id),
     FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
@@ -33,15 +34,29 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_votes_session ON votes(session_id);
 `);
 
+// Forward-compatibility for any DB created before decision_ms existed.
+const cols = db.prepare(`PRAGMA table_info(votes)`).all().map(c => c.name);
+if (!cols.includes('decision_ms')) {
+  db.exec(`ALTER TABLE votes ADD COLUMN decision_ms INTEGER`);
+}
+
 export const statements = {
   listItems: db.prepare('SELECT id, label, description, image_url FROM items ORDER BY id'),
   itemExists: db.prepare('SELECT 1 FROM items WHERE id = ?'),
   upsertVote: db.prepare(`
-    INSERT INTO votes (session_id, item_id, choice)
-    VALUES (@sessionId, @itemId, @choice)
+    INSERT INTO votes (session_id, item_id, choice, decision_ms)
+    VALUES (@sessionId, @itemId, @choice, @decisionMs)
     ON CONFLICT(session_id, item_id) DO UPDATE SET
       choice = excluded.choice,
+      decision_ms = COALESCE(excluded.decision_ms, votes.decision_ms),
       created_at = strftime('%s','now')
+  `),
+  stats: db.prepare(`
+    SELECT
+      COUNT(*) AS totalVotes,
+      COUNT(DISTINCT session_id) AS sessions,
+      AVG(decision_ms) AS avgDecisionMs
+    FROM votes
   `),
   deleteVote: db.prepare('DELETE FROM votes WHERE session_id = ? AND item_id = ?'),
   results: db.prepare(`

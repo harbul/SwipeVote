@@ -28,6 +28,7 @@ const REST_LABEL = {
 
 export default function Results() {
   const [rows, setRows] = useState(null);
+  const [stats, setStats] = useState(null);
   const [sort, setSort] = useState('loved');
   const [error, setError] = useState(null);
 
@@ -36,8 +37,8 @@ export default function Results() {
     let timer;
     const load = async () => {
       try {
-        const data = await api.results();
-        if (!cancel) setRows(data);
+        const [data, s] = await Promise.all([api.results(), api.stats()]);
+        if (!cancel) { setRows(data); setStats(s); }
       } catch (e) {
         if (!cancel) setError(e.message);
       } finally {
@@ -82,7 +83,11 @@ export default function Results() {
       <div className="results__masthead">
         <div className="results__kicker">Volume 01 · Live Tally</div>
         <h1 className="results__title">The <em>Verdict</em></h1>
-        <div className="results__byline">{totalVotes} votes counted · refreshing every 5s</div>
+        <div className="results__byline">
+          {stats
+            ? <>{stats.totalVotes} votes · {stats.sessions} voter{stats.sessions === 1 ? '' : 's'}{stats.avgDecisionMs != null ? <> · {(stats.avgDecisionMs / 1000).toFixed(1)}s avg decision</> : null} · refreshing every 5s</>
+            : <>{totalVotes} votes counted · refreshing every 5s</>}
+        </div>
       </div>
 
       <Segmented value={sort} onChange={setSort} options={SORTS} />

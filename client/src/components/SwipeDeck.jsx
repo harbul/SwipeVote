@@ -38,9 +38,9 @@ export default function SwipeDeck({ sessionId, onOpenResults }) {
   const decided = voted.size;
 
   // Fired the instant a vote is decided — POST to server & record undo history.
-  const handleVote = useCallback((item, choice) => {
+  const handleVote = useCallback((item, choice, decisionMs) => {
     setHistory(prev => [...prev, { item, choice }].slice(-10));
-    api.vote({ itemId: item.id, choice, sessionId }).catch(err => {
+    api.vote({ itemId: item.id, choice, sessionId, decisionMs }).catch(err => {
       console.error('vote failed', err);
     });
   }, [sessionId]);
@@ -94,8 +94,9 @@ export default function SwipeDeck({ sessionId, onOpenResults }) {
                     item={item}
                     position={position}
                     active={position === 0}
-                    onVote={(choice) => handleVote(item, choice)}
+                    onVote={(choice, decisionMs) => handleVote(item, choice, decisionMs)}
                     onExitDone={(choice) => handleExitDone(item, choice)}
+                    onSwipeDown={onOpenResults}
                   />
                 );
               })

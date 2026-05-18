@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 /**
  * Single swipeable card. Owns its own exit animation; parent gets notified
@@ -17,8 +17,10 @@ import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 const SWIPE_THRESHOLD = 110;
 const VELOCITY_THRESHOLD = 500;
 
+const DOWN_THRESHOLD = 110;
+
 const SwipeCard = forwardRef(function SwipeCard(
-  { item, position, onVote, onExitDone, active },
+  { item, position, onVote, onExitDone, onSwipeDown, active },
   ref
 ) {
   const x = useMotionValue(0);
@@ -31,19 +33,33 @@ const SwipeCard = forwardRef(function SwipeCard(
   const [exitChoice, setExitChoice] = useState(null);
   const exitingRef = useRef(false);
 
+  // Track when the user first saw this card as the top card, so we can
+  // measure decision time. Reset whenever this card becomes active.
+  const activatedAtRef = useRef(active ? Date.now() : null);
+  useEffect(() => {
+    if (active && activatedAtRef.current == null) activatedAtRef.current = Date.now();
+  }, [active]);
+
   const trigger = (choice) => {
     if (exitingRef.current) return;
     exitingRef.current = true;
     setExitChoice(choice);
-    onVote?.(choice);
+    const decisionMs = activatedAtRef.current ? Date.now() - activatedAtRef.current : null;
+    onVote?.(choice, decisionMs);
   };
 
   useImperativeHandle(ref, () => ({ triggerVote: trigger }), []);
 
   const handleDragEnd = (_, info) => {
     if (!active || exitingRef.current) return;
-    const dx = info.offset.x;
-    const vx = info.velocity.x;
+    const dx = info.offset.x, dy = info.offset.y;
+    const vx = info.velocity.x, vy = info.velocity.y;
+
+    // Downward pull dominates: open Results.
+    if (dy > DOWN_THRESHOLD && Math.abs(dx) < 60 && vy > -200) {
+      onSwipeDown?.();
+      return;
+    }
     if (dx >  SWIPE_THRESHOLD || vx >  VELOCITY_THRESHOLD) trigger('yes');
     else if (dx < -SWIPE_THRESHOLD || vx < -VELOCITY_THRESHOLD) trigger('no');
   };
@@ -71,9 +87,9 @@ const SwipeCard = forwardRef(function SwipeCard(
           : { scale: baseScale, y: baseY, opacity: 1, rotate: baseRotate }
       }
       transition={{ type: 'spring', stiffness: 280, damping: 30 }}
-      drag={active && !exitChoice ? 'x' : false}
+      drag={active && !exitChoice}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.85}
+      dragElastic={{ left: 0.85, right: 0.85, top: 0.15, bottom: 0.55 }}
       onDragEnd={handleDragEnd}
       onAnimationComplete={(latest) => {
         if (exitChoice && latest && latest.opacity === 0) {
