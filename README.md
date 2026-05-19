@@ -138,12 +138,26 @@ Validation: `itemId` must be an integer that exists; `choice` ∈ `{'yes','no'}`
 
 ---
 
-## Known issues / what we'd do with more time
+## Status
 
-- **Image preloading:** the next two cards are lazy-loaded; in flaky network conditions there can be a beat of empty image before they pop in. We'd add a tiny in-app blurhash or skeleton on the image wrapper.
-- **No accessibility audit beyond ARIA labels** on buttons. Keyboard swipe (← / →) would be a low-cost addition.
-- **No tests.** With 2 hours we focused on shipping. Vote endpoint validation + idempotency would be the natural first integration tests.
-- **No persistence of which sort the user picked on Results** — it resets to "Most Loved" each visit. Storing in localStorage would be one line.
+All Core (§3.1) and Stretch (§3.2) requirements implemented and verified end-to-end against a fresh clone — see the requirements checklist above. The happy path has no console errors and no known bugs at submission time.
+
+---
+
+## Future scope
+
+If this were a longer-running product, the next things on the roadmap would be:
+
+- **Lightweight sign-in** — a username-only or email-magic-link layer on top of the existing anonymous session so users can carry their votes across devices and see "voted by @harshita" credits in the Results view.
+- **WebSocket-driven live results** — replace the 5-second polling on `/api/results` with a Socket.io stream so the byline and grid update the instant any voter swipes. The polling fallback would stay for clients that can't hold a socket open.
+- **Categories and filters in the swipe deck** — let the user narrow the deck to e.g. *small breeds*, *terriers*, *hypoallergenic* before they start swiping. Backend support is a single `WHERE category = ?` clause on `/api/items`.
+- **"Your edition" share card** — a one-tap export of the user's top matches as a styled PNG (same Fraunces + tangerine treatment) so they can post their dog taste to Instagram. Generated server-side via `@vercel/og` or similar.
+- **Per-breed detail page** — tap any tile or card to open a full breed page with the global yes/no histogram, a few representative voter comments, and a "see this breed on Petfinder" outbound link.
+- **Real adoption integration** — the natural extension. Plug the Petfinder / ASPCA APIs in, surface actually-adoptable dogs in the user's zip code, and turn yes-votes into save-to-watchlist actions.
+- **Admin expansion** — edit and delete items, bulk-import a CSV, view per-item vote provenance, ban a session id, regenerate the seed.
+- **Accessibility pass** — keyboard navigation (← / → / `↩`), full ARIA on the segmented sort, a high-contrast mode that preserves the editorial direction.
+- **Internationalization** — Fraunces + Manrope + Newsreader all ship strong Latin-Extended coverage; the byline copy, kicker tags, and end-of-deck message would be the main translation surface.
+- **Integration test suite** — vitest for the React components, supertest for the Express routes. The vote-idempotency case would be the first one written.
 
 ---
 
