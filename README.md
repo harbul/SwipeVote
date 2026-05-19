@@ -27,6 +27,14 @@ Open **http://localhost:5173** in a mobile-emulated Chrome window (390 × 844). 
 
 To **re-seed** with a fresh image set: `cd server && node seed.js --reset` (this also clears votes).
 
+For a **demo with realistic crowd data**, run the demo-vote seed after the main seed:
+
+```bash
+cd server && node seed-demo-votes.js
+```
+
+This creates 8 simulated voters (`demo-voter-a` through `demo-voter-h`) with overlapping preferences — popular breeds at the front of the deck (~83% yes-rate), divisive breeds in the middle, and a long tail. After running it, swiping yes on any of the first ~30 breeds will populate the Matches view immediately. Re-running is safe: it drops the previous `demo-voter-*` rows and reinserts. Real user sessions are untouched.
+
 ---
 
 ## Architecture
