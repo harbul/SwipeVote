@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { motion, LayoutGroup } from 'framer-motion';
 import { api } from '../api.js';
 
 const SORTS = [
@@ -49,26 +49,28 @@ export default function Results() {
     return () => { cancel = true; clearTimeout(timer); };
   }, []);
 
+  // Each sort mode FILTERS to items that actually belong to that category,
+  // not just re-sorts the full list. Minimum-vote thresholds prevent
+  // 1-or-2-vote flukes from dominating a category they don't really belong in.
   const sorted = useMemo(() => {
     if (!rows) return null;
-    const arr = rows.slice();
     if (sort === 'loved') {
-      arr.sort((a, b) => {
-        if (a.total === 0 && b.total === 0) return 0;
-        if (a.total === 0) return 1;
-        if (b.total === 0) return -1;
-        return b.yes_rate - a.yes_rate || b.total - a.total;
-      });
-    } else if (sort === 'divisive') {
-      arr.sort((a, b) => {
-        const aScore = a.total < 2 ? Infinity : Math.abs(0.5 - a.yes_rate);
-        const bScore = b.total < 2 ? Infinity : Math.abs(0.5 - b.yes_rate);
-        return aScore - bScore || b.total - a.total;
-      });
-    } else {
-      arr.sort((a, b) => a.total - b.total || a.label.localeCompare(b.label));
+      return rows
+        .filter(r => r.total >= 4 && r.yes_rate >= 0.6)
+        .sort((a, b) => b.yes_rate - a.yes_rate || b.total - a.total);
     }
-    return arr;
+    if (sort === 'divisive') {
+      return rows
+        .filter(r => r.total >= 5 && Math.abs(r.yes_rate - 0.5) <= 0.2)
+        .sort((a, b) =>
+          Math.abs(0.5 - a.yes_rate) - Math.abs(0.5 - b.yes_rate)
+          || b.total - a.total
+        );
+    }
+    // 'skipped' — items the crowd has barely engaged with
+    return rows
+      .filter(r => r.total <= 2)
+      .sort((a, b) => a.total - b.total || a.label.localeCompare(b.label));
   }, [rows, sort]);
 
   if (error) return <div className="loading">Couldn't load results — {error}</div>;
@@ -93,23 +95,22 @@ export default function Results() {
       <Segmented value={sort} onChange={setSort} options={SORTS} />
 
       <LayoutGroup>
-        <AnimatePresence mode="wait" initial={false}>
-          {hero && (
-            <motion.div
-              key={`${sort}-${hero.itemId}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <HeroCard row={hero} kicker={HERO_LABEL[sort]} sort={sort} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {hero && (
+          <motion.div
+            key={`${sort}-${hero.itemId}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <HeroCard row={hero} kicker={HERO_LABEL[sort]} sort={sort} />
+          </motion.div>
+        )}
 
         <div className="r-divider">
           <span className="r-divider__label">{REST_LABEL[sort]}</span>
         </div>
+
+        {sorted.length === 0 && <EmptyState sort={sort} />}
 
         <div className="r-spread">
           {rest.map((row, i) => (
@@ -153,6 +154,16 @@ export default function Results() {
       </LayoutGroup>
     </section>
   );
+}
+
+const EMPTY_COPY = {
+  loved:    "No clear favourites yet. Once a few breeds gather 2+ votes with a majority yes, they'll surface here.",
+  divisive: "Nothing close to a 50/50 split yet — the crowd has been pretty decisive so far.",
+  skipped:  "Every breed has at least two votes — nothing's been overlooked.",
+};
+
+function EmptyState({ sort }) {
+  return <div className="empty" style={{ padding: '32px 8px' }}>{EMPTY_COPY[sort]}</div>;
 }
 
 function HeroCard({ row, kicker, sort }) {
